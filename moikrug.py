@@ -4,8 +4,18 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def fetch_pages_moikrug(size: int=10):
-    url_moikrug = 'https://moikrug.ru/vacancies?page={}&type=all'  # type: str
+def get_url_for_type_vacancies(type_vacancies: str='all') -> str:
+    url_moikrug_dict = {
+        'all': 'https://moikrug.ru/vacancies?page={}&type=all',
+        'python': 'https://moikrug.ru/vacancies?page={}&skills%5B%5D=446&type=all',
+    }
+    if type_vacancies not in url_moikrug_dict:
+        type_vacancies = 'all'
+    return url_moikrug_dict[type_vacancies]
+
+
+def fetch_pages_moikrug(size: int=10, category: str= 'all'):
+    url_moikrug = get_url_for_type_vacancies(category)  # type: str
     urls = [url_moikrug.format(i) for i in range(1, size+1)]  # type: List[str]
     raw_pages = []
     for url_page in urls:

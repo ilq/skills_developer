@@ -18,7 +18,11 @@ def parse_argv():
     parser.add_argument(
         '--top-skills', type=int, default=20,
         help='''Вывести TOP-SKILLS самых частых навыков. Если --top-skills 0
-будут показаны все навыки'''
+будут показаны все навыки. Поумолчанию --top-skills 20.'''
+    )
+    parser.add_argument(
+        '--category', choices=['all', 'python'], default='all',
+        help='''Параметр для сужения окна поиска'''
     )
     return parser.parse_args()
 
@@ -45,11 +49,15 @@ def output_frequency_skills(frequency_skills, top_size=None):
 def main():
     argv = parse_argv()
     skills_top_size = argv.top_skills if argv.top_skills > 0 else None
-    raw_pages = fetch_pages_moikrug(argv.page_size)  # type: List[str]
-    vacancies = parse_vacancies_from_raw_pages_moikrug(raw_pages)  # type: List[Dict]
+    raw_pages = fetch_pages_moikrug(
+        argv.page_size, argv.category
+    )  # type: List[str]
+    vacancies = parse_vacancies_from_raw_pages_moikrug(
+        raw_pages
+    )  # type: List[Dict]
     frequency_skills = calc_frequency_skills(vacancies)
-    print('Проанализировано {} вакансий. Повстречали {} навыков.'.format(
-        len(vacancies), len(frequency_skills)
+    print('Посмотрели {} страниц. Проанализировано {} вакансий. Повстречали {} навыков.'.format(
+        len(raw_pages), len(vacancies), len(frequency_skills)
     ))
     output_frequency_skills(frequency_skills, skills_top_size)
 
