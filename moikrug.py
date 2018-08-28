@@ -1,10 +1,32 @@
+import asyncio
 from typing import List, Dict, Any
 
 import requests
+import aiohttp
 from bs4 import BeautifulSoup
 
 
-def get_url_for_type_vacancies(type_vacancies: str='all') -> str:
+async def fetch_page_moikrug_async(url: str):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            try:
+                response_text = await response.text()
+            except aiohttp.ClientResponseError:
+                return ''
+            return response_text
+
+
+def _fetch_pages_moikrug_async(urls: List[str]) -> List[str]:
+    loop = asyncio.get_event_loop()
+    tasks = [
+        asyncio.ensure_future(fetch_page_moikrug_async(url))
+        for url in urls
+    ]
+    done, _ = loop.run_until_complete(asyncio.wait(tasks))
+    return [fut.result() for fut in done]
+
+
+def get_url_for_type_vacancies(type_vacancies: str = 'all') -> str:
     url_moikrug_dict = {
         'all': 'https://moikrug.ru/vacancies?page={}&type=all',
         'python': 'https://moikrug.ru/vacancies?page={}&skills%5B%5D=446&type=all',
@@ -14,18 +36,23 @@ def get_url_for_type_vacancies(type_vacancies: str='all') -> str:
     return url_moikrug_dict[type_vacancies]
 
 
-def fetch_pages_moikrug(size: int=10, category: str= 'all'):
-    url_moikrug = get_url_for_type_vacancies(category)  # type: str
-    urls = [url_moikrug.format(i) for i in range(1, size+1)]  # type: List[str]
+def _fetch_pages_moikrug(urls: List[str]) -> List[str]:
     raw_pages = []
     for url_page in urls:
         try:
             response = requests.get(url_page)
-        except requests.exceptions.RequestException as e:
-            print(e)
+        except requests.exceptions.RequestException as exceptions_instance:
+            print(exceptions_instance)
             continue
         if response.status_code == 200:
             raw_pages.append(response.text)
+    return raw_pages
+
+
+def fetch_pages_moikrug(size: int = 10, category: str = 'all', is_no_async: bool = False) -> List[str]:
+    url_moikrug = get_url_for_type_vacancies(category)  # type: str
+    urls = [url_moikrug.format(i) for i in range(1, size+1)]  # type: List[str]
+    raw_pages = _fetch_pages_moikrug(urls) if is_no_async else _fetch_pages_moikrug_async(urls)
     return raw_pages
 
 
